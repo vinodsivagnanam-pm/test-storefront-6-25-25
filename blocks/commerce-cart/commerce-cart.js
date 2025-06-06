@@ -186,7 +186,7 @@ export default async function decorate(block) {
           // TODO this is a workaround to show the checkout button below the gift cards
           // as routeCheckout expects an string, but we want to show a modal with the xsell block
           const $checkoutButton = document.createElement('div');
-          
+
           UI.render(Button, {
             dataTestId: 'checkout-button',
             variant: 'primary',
