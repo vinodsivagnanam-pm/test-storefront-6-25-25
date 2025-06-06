@@ -2,6 +2,14 @@ import { events } from '@dropins/tools/event-bus.js';
 import { render as provider } from '@dropins/storefront-cart/render.js';
 import * as Cart from '@dropins/storefront-cart/api.js';
 
+// Dropin Components
+import {
+  Button,
+  provider as UI,
+} from '@dropins/tools/components.js';
+
+import { buildBlock, loadBlock, decorateBlock } from '../../scripts/aem.js';
+
 // Dropin Containers
 import CartSummaryList from '@dropins/storefront-cart/containers/CartSummaryList.js';
 import OrderSummary from '@dropins/storefront-cart/containers/OrderSummary.js';
@@ -14,11 +22,15 @@ import GiftOptions from '@dropins/storefront-cart/containers/GiftOptions.js';
 // API
 import { publishShoppingCartViewEvent } from '@dropins/storefront-cart/api.js';
 
+// Block-level
+import createModal from '../modal/modal.js';
+
 // Initializers
 import '../../scripts/initializers/cart.js';
 
 import { readBlockConfig } from '../../scripts/aem.js';
 import { rootLink } from '../../scripts/scripts.js';
+
 
 export default async function decorate(block) {
   // Configuration
@@ -60,6 +72,50 @@ export default async function decorate(block) {
 
   block.innerHTML = '';
   block.appendChild(fragment);
+
+  let modal = null;
+
+  // Dynamic containers and components
+  const showModal = async (content) => {
+    modal = await createModal([content]);
+    modal.showModal();
+  };
+
+  const removeModal = () => {
+    if (!modal) return;
+    modal.removeModal();
+    modal = null;
+  };
+
+
+  // TODO this is a workaround to show xsell block in a modal
+  // instead of building a block, a drop-in component would be better
+  const checkoutXsellBlock = document.createElement('div');
+  const xsellBlock = buildBlock('product-recommendations', '');
+  checkoutXsellBlock.appendChild(xsellBlock);
+  decorateBlock(xsellBlock);
+  loadBlock(xsellBlock);
+
+  function showXsellCheckout() {
+    // Create container for modal content
+    const $modalContent = document.createElement('div');
+    $modalContent.appendChild(checkoutXsellBlock);
+
+    const $checkoutButton = document.createElement('div');
+
+    UI.render(Button, {
+      variant: 'primary',
+      children: 'Proceed to Checkout',
+      onClick: () => {
+        removeModal();
+        window.location.href = rootLink('/checkout');
+      },
+    })($checkoutButton);
+    $modalContent.appendChild($checkoutButton);
+
+    // Display modal with combined content
+    showModal($modalContent);
+  }
 
   // Toggle Empty Cart
   function toggleEmptyCart(state) {
@@ -108,7 +164,7 @@ export default async function decorate(block) {
     // Order Summary
     provider.render(OrderSummary, {
       routeProduct: (product) => rootLink(`/products/${product.url.urlKey}/${product.topLevelSku}`),
-      routeCheckout: checkoutURL ? () => rootLink(checkoutURL) : undefined,
+      // routeCheckout: checkoutURL ? () => rootLink(checkoutURL) : undefined,
       slots: {
         EstimateShipping: async (ctx) => {
           if (enableEstimateShipping === 'true') {
@@ -130,6 +186,18 @@ export default async function decorate(block) {
           provider.render(GiftCards)(giftCards);
 
           ctx.appendChild(giftCards);
+
+          // TODO this is a workaround to show the checkout button below the gift cards
+          // as routeCheckout expects an string, but we want to show a modal with the xsell block
+          const $checkoutButton = document.createElement('div');
+          UI.render(Button, {
+            dataTestId: 'checkout-button',
+            variant: 'primary',
+            onClick: showXsellCheckout,
+            children: "XSell Checkout"
+          })($checkoutButton);
+
+          ctx.appendChild($checkoutButton);
         },
       },
     })($summary),
