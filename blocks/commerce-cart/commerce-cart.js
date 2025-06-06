@@ -8,8 +8,6 @@ import {
   provider as UI,
 } from '@dropins/tools/components.js';
 
-import { buildBlock, loadBlock, decorateBlock } from '../../scripts/aem.js';
-
 // Dropin Containers
 import CartSummaryList from '@dropins/storefront-cart/containers/CartSummaryList.js';
 import OrderSummary from '@dropins/storefront-cart/containers/OrderSummary.js';
@@ -28,9 +26,8 @@ import createModal from '../modal/modal.js';
 // Initializers
 import '../../scripts/initializers/cart.js';
 
-import { readBlockConfig } from '../../scripts/aem.js';
+import { readBlockConfig, buildBlock, loadBlock, decorateBlock } from '../../scripts/aem.js';
 import { rootLink } from '../../scripts/scripts.js';
-
 
 export default async function decorate(block) {
   // Configuration
@@ -87,25 +84,24 @@ export default async function decorate(block) {
     modal = null;
   };
 
-
   // TODO this is a workaround to show xsell block in a modal
   // instead of building a block, a drop-in component would be better
-  const checkoutXsellBlock = document.createElement('div');
+  const $checkoutXsellBlock = document.createElement('div');
   const xsellBlock = buildBlock('product-recommendations', '');
-  checkoutXsellBlock.appendChild(xsellBlock);
+  $checkoutXsellBlock.appendChild(xsellBlock);
   decorateBlock(xsellBlock);
   loadBlock(xsellBlock);
 
   function showXsellCheckout() {
     // Create container for modal content
     const $modalContent = document.createElement('div');
-    $modalContent.appendChild(checkoutXsellBlock);
+    $modalContent.appendChild($checkoutXsellBlock);
 
     const $checkoutButton = document.createElement('div');
 
     UI.render(Button, {
       variant: 'primary',
-      children: 'Proceed to Checkout',
+      children: 'Checkout',
       onClick: () => {
         removeModal();
         window.location.href = rootLink('/checkout');
@@ -190,11 +186,12 @@ export default async function decorate(block) {
           // TODO this is a workaround to show the checkout button below the gift cards
           // as routeCheckout expects an string, but we want to show a modal with the xsell block
           const $checkoutButton = document.createElement('div');
+          
           UI.render(Button, {
             dataTestId: 'checkout-button',
             variant: 'primary',
             onClick: showXsellCheckout,
-            children: "XSell Checkout"
+            children: 'Checkout',
           })($checkoutButton);
 
           ctx.appendChild($checkoutButton);
