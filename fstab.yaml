@@ -1,0 +1,7 @@
+mountpoints:
+  /:
+    url: https://content.da.live/vinodsivagnanam-pm/test-storefront-6-25-25/
+    type: markup
+
+folders:
+  /products/: /products/default
